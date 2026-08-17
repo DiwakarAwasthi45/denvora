@@ -102,10 +102,7 @@ export function handleApiError(error: unknown): Response {
   }
 
   console.error("[api] Unhandled error:", error);
-  const message =
-    process.env.NODE_ENV !== "production" && error instanceof Error
-      ? error.message
-      : "Internal server error";
+  const message = error instanceof Error ? error.message : "Internal server error";
   return apiError(message, 500, ERROR_CODES.INTERNAL_ERROR);
 }
 
