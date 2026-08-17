@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_URL = process.env.DATABASE_URL || process.env.DATABASE_URI || process.env.MONGODB_URI || process.env.MONGODB_URL;
 const DATABASE_NAME = process.env.DATABASE_NAME ?? "denvora";
 
 declare global {
