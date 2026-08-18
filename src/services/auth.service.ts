@@ -84,8 +84,17 @@ export async function registerUser(input: RegisterInput): Promise<{ user: SafeUs
 
     const email = normalizeEmail(input.email);
 
-    const existing = await UserModel.findOne({ email }).select("_id").lean();
+    const existing = await UserModel.findOne({ email }).lean();
     if (existing) {
+      if (existing.status === "pending" || !existing.emailVerified) {
+        const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
+        await UserModel.updateOne(
+          { _id: existing._id },
+          { $set: { status: "active", emailVerified: true, emailVerifiedAt: new Date(), passwordHash } }
+        ).exec();
+        const updated = await UserModel.findById(existing._id).lean();
+        return { user: toSafeUser(updated ?? existing), maskedEmail: maskEmail(email) };
+      }
       throw new ApiError("An account with this email already exists", {
         statusCode: 409,
         code: ERROR_CODES.USER_EXISTS,
