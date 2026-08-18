@@ -31,19 +31,15 @@ function LoginForm() {
 const onSubmit = async (values: LoginInput) => {
     setServerError(null);
     try {
-      const result = await signIn("credentials", {
+      await signIn("credentials", {
         email: values.email,
         password: values.password,
-        redirect: false,
+        callbackUrl: callbackUrl,
       });
-
-      if (result?.error) {
-        setServerError("Invalid email or password. Please try again.");
-      } else {
-        toast.success("Signed in successfully");
-        window.location.assign(callbackUrl);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
+        throw error;
       }
-    } catch {
       setServerError("Unable to sign in right now. Please try again in a moment.");
     }
   };
