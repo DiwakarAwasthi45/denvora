@@ -5,17 +5,13 @@ import { Eye, EyeOff, Mail, Lock, ArrowRight, ShieldCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { toast } from "react-toastify";
 import Link from "next/link";
 import { loginSchema, type LoginInput } from "@/validations/auth.schema";
-import { http, HttpClientError } from "@/lib/http";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-
-const ACCOUNT_LOCKED = "ACCOUNT_LOCKED";
-const EMAIL_NOT_VERIFIED = "EMAIL_NOT_VERIFIED";
-const INVALID_CREDENTIALS = "INVALID_CREDENTIALS";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -35,28 +31,20 @@ function LoginForm() {
 const onSubmit = async (values: LoginInput) => {
     setServerError(null);
     try {
-      const payload = await http<{ user: { email: string } }>("/api/auth/login", {
-        method: "POST",
-        body: values,
+      const result = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        redirect: false,
       });
 
-      toast.success("Signed in successfully");
-      window.location.assign(callbackUrl);
-      return payload;
-    } catch (error) {
-      if (error instanceof HttpClientError) {
-        if (error.code === ACCOUNT_LOCKED || error.code === EMAIL_NOT_VERIFIED) {
-          setServerError(error.message);
-        } else if (error.code === INVALID_CREDENTIALS) {
-          setServerError("Invalid email or password. Please try again.");
-        } else if (error.status === 0 || error.status >= 500) {
-          setServerError("Unable to sign in right now. Please try again in a moment.");
-        } else {
-          setServerError("Unable to sign in. Please try again.");
-        }
+      if (result?.error) {
+        setServerError("Invalid email or password. Please try again.");
       } else {
-        setServerError("Unable to sign in right now. Please try again in a moment.");
+        toast.success("Signed in successfully");
+        window.location.assign(callbackUrl);
       }
+    } catch {
+      setServerError("Unable to sign in right now. Please try again in a moment.");
     }
   };
 
