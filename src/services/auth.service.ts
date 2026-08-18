@@ -100,8 +100,9 @@ export async function registerUser(input: RegisterInput): Promise<{ user: SafeUs
       phone: input.phone ?? "",
       passwordHash,
       isPlatform: false,
-      status: "pending",
-      emailVerified: false,
+      status: "active",
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
     });
 
     const { clinicId, slug } = await createClinic({
@@ -130,13 +131,6 @@ export async function registerUser(input: RegisterInput): Promise<{ user: SafeUs
         },
       }
     ).exec();
-
-    const otp = await createOtpRecord(user._id.toString(), "email_verification");
-
-    await sendMail(otpEmail(email, otp, "Email")).catch(() => {});
-    if (process.env.NODE_ENV !== "production") {
-      console.info(`[dev] Registration OTP for ${email}: ${otp} (clinic slug: ${slug})`);
-    }
 
     const updatedUser = await UserModel.findById(user._id).lean();
     return { user: toSafeUser(updatedUser ?? user), maskedEmail: maskEmail(email) };

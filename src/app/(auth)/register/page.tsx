@@ -39,10 +39,8 @@ export default function RegisterPage() {
         "/api/auth/register",
         values
       );
-      toast.success("Account created! Enter the verification code we emailed you.");
-      router.push(
-        `/verify-email?email=${encodeURIComponent(result.user.email)}&masked=${encodeURIComponent(result.maskedEmail)}`
-      );
+      toast.success("Account created! You can now sign in.");
+      router.push("/login");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to create your account. Please try again.";
