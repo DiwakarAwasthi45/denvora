@@ -121,15 +121,16 @@ export const authConfig: NextAuthConfig = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id;
-        session.user.clinicId = token.clinicId ?? null;
-        session.user.branchId = token.branchId ?? null;
-        session.user.role = token.role ?? null;
-        session.user.roleId = token.roleId ?? null;
-        session.user.permissions = token.permissions ?? [];
-        session.user.isPlatform = token.isPlatform ?? false;
-        session.user.isEmailVerified = token.isEmailVerified ?? false;
-        session.user.tokenVersion = token.tokenVersion ?? 0;
+        const t = token as Record<string, unknown>;
+        session.user.id = String(t.id ?? "");
+        session.user.clinicId = (t.clinicId as string | null) ?? null;
+        session.user.branchId = (t.branchId as string | null) ?? null;
+        session.user.role = (t.role as string | null) ?? null;
+        session.user.roleId = (t.roleId as string | null) ?? null;
+        session.user.permissions = (t.permissions as string[]) ?? [];
+        session.user.isPlatform = (t.isPlatform as boolean) ?? false;
+        session.user.isEmailVerified = (t.isEmailVerified as boolean) ?? false;
+        session.user.tokenVersion = (t.tokenVersion as number) ?? 0;
       }
       return session;
     },
