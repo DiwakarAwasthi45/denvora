@@ -41,13 +41,6 @@ export const forgotPasswordSchema = z.object({
 
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
-export const verifyEmailSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Enter a valid email address"),
-  otp: z.string().regex(/^\d{6}$/, "Enter the 6-digit code"),
-});
-
-export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
-
 export const resetPasswordSchema = z
   .object({
     email: z.string().trim().toLowerCase().email("Enter a valid email address"),

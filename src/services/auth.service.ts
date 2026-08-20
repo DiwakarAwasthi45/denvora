@@ -11,7 +11,7 @@ import { createClinic } from "./clinic.service";
 import { ensureSeeded, getRoleBySlug } from "./permission.service";
 import { SYSTEM_ROLE_SLUGS } from "@/constants/roles";
 import { maskEmail, normalizeEmail } from "@/lib/utils";
-import type { LoginInput, RegisterInput, VerifyEmailInput, ResetPasswordInput, ResendOtpInput, AcceptInviteInput } from "@/validations/auth.schema";
+import type { LoginInput, RegisterInput, ResetPasswordInput, ResendOtpInput, AcceptInviteInput } from "@/validations/auth.schema";
 import type { SafeUser } from "@/types";
 
 const BCRYPT_ROUNDS = 12;
@@ -146,73 +146,6 @@ export async function registerUser(input: RegisterInput): Promise<{ user: SafeUs
   } catch (error) {
     if (error instanceof ApiError) throw error;
     throw ApiError.internal(error instanceof Error ? error.message : "Registration failed");
-  }
-}
-
-export async function verifyEmail(input: VerifyEmailInput): Promise<{ user: SafeUser }> {
-  try {
-    await connectDB();
-
-    const email = normalizeEmail(input.email);
-    const user = await UserModel.findOne({ email }).lean();
-    if (!user) {
-      throw new ApiError("Account not found", { statusCode: 404, code: ERROR_CODES.NOT_FOUND });
-    }
-
-    const token = await VerificationTokenModel.findOne({
-      userId: user._id,
-      type: "email_verification",
-      consumedAt: null,
-    }).sort({ createdAt: -1 }).lean();
-
-    if (!token) {
-      throw new ApiError("No verification code found. Please request a new code.", {
-        statusCode: 400,
-        code: ERROR_CODES.OTP_INVALID,
-      });
-    }
-
-    if (token.expiresAt < new Date()) {
-      throw new ApiError("This verification code has expired. Please request a new one.", {
-        statusCode: 400,
-        code: ERROR_CODES.OTP_EXPIRED,
-      });
-    }
-
-    if (token.attempts >= OTP.maxAttempts) {
-      throw new ApiError("Too many failed attempts. Please request a new code.", {
-        statusCode: 400,
-        code: ERROR_CODES.OTP_MAX_ATTEMPTS,
-      });
-    }
-
-    if (!secureCompare(hashToken(input.otp), token.tokenHash)) {
-      await VerificationTokenModel.updateOne(
-        { _id: token._id },
-        { $inc: { attempts: 1 } }
-      ).exec();
-      throw new ApiError("Invalid verification code", {
-        statusCode: 400,
-        code: ERROR_CODES.OTP_INVALID,
-      });
-    }
-
-    await VerificationTokenModel.updateOne(
-      { _id: token._id },
-      { $set: { consumedAt: new Date() } }
-    ).exec();
-
-    await UserModel.updateOne(
-      { _id: user._id },
-      { $set: { emailVerified: true, emailVerifiedAt: new Date(), status: "active" } }
-    ).exec();
-
-    await sendMail(welcomeEmail(email));
-
-    return { user: toSafeUser({ ...user, emailVerified: true }) };
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    throw ApiError.internal(error instanceof Error ? error.message : "Email verification failed");
   }
 }
 
